@@ -85,7 +85,7 @@ mysql> FLUSH PRIVILEGES;
 mysql> exit;
 Download Source code & Initialize Database.
  # cd /tmp/
-# git clone -b local https://github.com/hkhcoder/vprofile-project.git
+# git clone -b local https://github.com/vee-kay8/MultiTier_WebApp_Local.git
 # cd vprofile-project
 # mysql -u root -padmin123 accounts < src/main/resources/db_backup.sql
 # mysql -u root -padmin123 accounts
