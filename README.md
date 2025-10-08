@@ -53,11 +53,14 @@ Messaging Layer: RabbitMQ is installed and running to demonstrate a production-r
 3) Execute below command in your computer to install hostmanager plugin
     $ vagrant plugin install vagrant-hostmanager
 
-4) CD into repository and bring up VMs
-    $ cd MultiTier_WebApp_Locally
-    $ vagrant up
-   NOTE: Bringing up all the vm’s may take a long time based on various factors. If vm setup stops in the middle run “vagrant up” command again.
-   INFO: All the vm’s hostname and /etc/hosts file entries will be automatically updated.
+4) CD into repository and bring up VMs**
+
+      $ cd MultiTier_WebApp_Locally
+
+      $ vagrant up
+
+      NOTE: Bringing up all the vm’s may take a long time based on various factors. If vm setup stops in the middle run “vagrant up” command again.
+      INFO: All the vm’s hostname and /etc/hosts file entries will be automatically updated.
 
 5) Setup Services
   Setup should be done in below mentioned order:
@@ -84,6 +87,7 @@ Messaging Layer: RabbitMQ is installed and running to demonstrate a production-r
       RUN mysql secure installation script.
     this command asks a series of question to secure the database
       $ mysql_secure_installation
+
     NOTE: Set db root password, I will be using admin123 as password just because this is a home labproject, in real world, you should use a more complicaed password
 
     Set root password? [Y/n] Y New password:
@@ -132,23 +136,6 @@ Messaging Layer: RabbitMQ is installed and running to demonstrate a production-r
        MariaDB> exit;
     Restart mariadb-server
        $ systemctl restart mariadb
-      
-    
-
-     
-
-
-
-
-     
-      
-    
-      
-    
-
-    
-
-
 
   ### MEMCACHE SETUP 
     Login to the Memcache VM
@@ -159,151 +146,155 @@ Messaging Layer: RabbitMQ is installed and running to demonstrate a production-r
       # dnf update -y
     Install, start & enable memcache on port 11211
       # sudo dnf install epel-release -y
-    # sudo dnf install memcached -y
-    # sudo systemctl start memcached
-    # sudo systemctl enable memcached
-    # sudo systemctl status memcached
-  The next command enables the memcached to be able to connect remotely to tomcat and not just locally
-    # sed -i 's/127.0.0.1/0.0.0.0/g' /etc/sysconfig/memcached
-  Restart the memcached
-    # sudo systemctl restart memcached
-  Enable memcached to listen on port 11211 and udp port 11111
-    # sudo memcached -p 11211 -U 11111 -u memcached -d
+      # sudo dnf install memcached -y
+      # sudo systemctl start memcached
+      # sudo systemctl enable memcached
+      # sudo systemctl status memcached
+    The next command enables the memcached to be able to connect remotely to tomcat and not just locally
+      # sed -i 's/127.0.0.1/0.0.0.0/g' /etc/sysconfig/memcached
+    Restart the memcached
+      # sudo systemctl restart memcached
+    Enable memcached to listen on port 11211 and udp port 11111
+      # sudo memcached -p 11211 -U 11111 -u memcached -d
 
  
   ### RABBITMQ SETUP
-  Login to the RabbitMQ vm
-    $ vagrant ssh rmq01
-  Switch to root user
-    # sudo -i
-  Update packages to latest versions
-    # dnf update -y
-  Set EPEL Repository
-    # dnf install epel-release -y 
-  Install Dependencies
-    # sudo dnf install wget -y
-    # dnf -y install centos-release-rabbitmq-38
-    # dnf --enablerepo=centos-rabbitmq-38 -y install rabbitmq-server
-  Setup access to user test and make it admin
-    # sudo sh -c 'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
-    # sudo rabbitmqctl add_user test test
-    # sudo rabbitmqctl set_user_tags test administrator
-    # rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
-    # sudo systemctl restart rabbitmq-server
-    # systemctl enable --now rabbitmq-server
+    Login to the RabbitMQ vm
+      $ vagrant ssh rmq01
+    Switch to root user
+      # sudo -i
+    Update packages to latest versions
+      # dnf update -y
+    Set EPEL Repository
+      # dnf install epel-release -y 
+    Install Dependencies
+      # sudo dnf install wget -y
+      # dnf -y install centos-release-rabbitmq-38
+      # dnf --enablerepo=centos-rabbitmq-38 -y install rabbitmq-server
+    Setup access to user test and make it admin
+      # sudo sh -c 'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
+      # sudo rabbitmqctl add_user test test
+      # sudo rabbitmqctl set_user_tags test administrator
+      # rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
+      # sudo systemctl restart rabbitmq-server
+      # systemctl enable --now rabbitmq-server
 
   ### TOMCAT SETUP
-  Login to the tomcat vm
-    $ vagrant ssh app01
-  Switch to root user
-    # sudo -i
-  Update packages to latest versions
-    # dnf update -y
-  Set Repository
-    # dnf install epel-release -y 
-  Install Dependencies
-    # dnf -y install java-17-openjdk java-17-openjdk-devel 
-    # dnf install git wget vim unzip -y
-  Change dir to /tmp
-    # cd /tmp/
-  Download Tomcat Package
-    # wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.26/bin/apache-tomcat-10.1.26.tar.gz
-  Extract
-    # tar xzvf apache-tomcat-10.1.26.tar.gz
-  Add tomcat user
-    # useradd --home-dir /usr/local/tomcat --shell /sbin/nologin tomcat
-  Copy data to tomcat home dir
-    # cp -r /tmp/apache-tomcat-10.1.26/* /usr/local/tomcat/ 
-  Make tomcat user owner of tomcat home dir
-    # chown -R tomcat.tomcat /usr/local/tomcat Setup systemctl command for tomcat
-  Create tomcat service file
-    # vi /etc/systemd/system/tomcat.service 
-    Update the file with below content
-      [Unit]
-      Description=Tomcat
-      After=network.target
-      [Service]
-      User=tomcat
-      Group=tomcat
-      WorkingDirectory=/usr/local/tomcat
-      Environment=JAVA_HOME=/usr/lib/jvm/jre
-      Environment=CATALINA_PID=/var/tomcat/%i/run/tomcat.pid
-      Environment=CATALINA_HOME=/usr/local/tomcat
-      Environment=CATALINE_BASE=/usr/local/tomcat
-      ExecStart=/usr/local/tomcat/bin/catalina.sh run
-      ExecStop=/usr/local/tomcat/bin/shutdown.sh
-      RestartSec=10
-      Restart=always
-      [Install]
-      WantedBy=multi-user.target
+    Login to the tomcat vm
+      $ vagrant ssh app01
+    Switch to root user
+      # sudo -i
+    Update packages to latest versions
+      # dnf update -y
+    Set Repository
+      # dnf install epel-release -y 
+    Install Dependencies
+      # dnf -y install java-17-openjdk java-17-openjdk-devel 
+      # dnf install git wget vim unzip -y
+    Change dir to /tmp
+      # cd /tmp/
+    Download Tomcat Package
+      # wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.26/bin/apache-tomcat-10.1.26.tar.gz
+    Extract
+      # tar xzvf apache-tomcat-10.1.26.tar.gz
+    Add tomcat user
+      # useradd --home-dir /usr/local/tomcat --shell /sbin/nologin tomcat
+    Copy data to tomcat home dir
+      # cp -r /tmp/apache-tomcat-10.1.26/* /usr/local/tomcat/ 
+    Make tomcat user owner of tomcat home dir
+      # chown -R tomcat.tomcat /usr/local/tomcat Setup systemctl command for tomcat
+    Create tomcat service file
+      # vi /etc/systemd/system/tomcat.service 
+        Update the file with below content
+        [Unit]
+        Description=Tomcat
+        After=network.target
+        [Service]
+        User=tomcat
+        Group=tomcat
+        WorkingDirectory=/usr/local/tomcat
+        Environment=JAVA_HOME=/usr/lib/jvm/jre
+        Environment=CATALINA_PID=/var/tomcat/%i/run/tomcat.pid
+        Environment=CATALINA_HOME=/usr/local/tomcat
+        Environment=CATALINE_BASE=/usr/local/tomcat
+        ExecStart=/usr/local/tomcat/bin/catalina.sh run
+        ExecStop=/usr/local/tomcat/bin/shutdown.sh
+        RestartSec=10
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
 
-  Reload systemd files
-    # systemctl daemon-reload 
-  Start & Enable service
-    # systemctl start tomcat
-    # systemctl enable tomcat
- Maven Setup
-  CODE BUILD & DEPLOY (app01)
-    # cd /tmp/
-    # wget https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip
-    # unzip apache-maven-3.9.9-bin.zip
-    # cp -r apache-maven-3.9.9 /usr/local/maven3.9
-    # export MAVEN_OPTS="-Xmx512m"
-  Download Source code
-    # git clone https://github.com/vee-kay8/MultiTier_WebApp_Local.git
-  Update configuration
-    # cd MultiTier_WebApp_Local
-  Update file with backend server details
-    # vim src/main/resources/application.properties
-  Build code
-  Run below command inside the repository (MultiTier_WebApp_Local)
-    # /usr/local/maven3.9/bin/mvn install
-  Deploy artifact  
-    # rm -rf /usr/local/tomcat/webapps/ROOT*
-    # cp target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
-    # chown tomcat.tomcat /usr/local/tomcat/webapps -R
-    # systemctl restart tomcat
+    Reload systemd files
+      # systemctl daemon-reload 
+    Start & Enable service
+      # systemctl start tomcat
+      # systemctl enable tomcat
+
+    Maven Setup
+    
+    CODE BUILD & DEPLOY (app01)
+      # cd /tmp/
+      # wget https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip
+      # unzip apache-maven-3.9.9-bin.zip
+      # cp -r apache-maven-3.9.9 /usr/local/maven3.9
+      # export MAVEN_OPTS="-Xmx512m"
+    Download Source code
+      # git clone https://github.com/vee-kay8/MultiTier_WebApp_Local.git
+    Update configuration
+      # cd MultiTier_WebApp_Local
+    Update file with backend server details
+      # vim src/main/resources/application.properties
+
+    Build code
+
+    Run below command inside the repository (MultiTier_WebApp_Local)
+      # /usr/local/maven3.9/bin/mvn install
+    Deploy artifact  
+      # rm -rf /usr/local/tomcat/webapps/ROOT*
+      # cp target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
+      # chown tomcat.tomcat /usr/local/tomcat/webapps -R
+      # systemctl restart tomcat
 
 
   ### NGINX SETUP
-  Login to the Nginx vm
-    $ vagrant ssh web01
-  Switch to root user
-    # sudo -i
-  Update packages to latest versions
-    # apt update
-    # apt upgrade
-  Install nginx
-    # apt install nginx -y 
-  Create Nginx conf file
-    # vi /etc/nginx/sites-available/vproapp 
-  Update with below content
+    Login to the Nginx vm
+      $ vagrant ssh web01
+    Switch to root user
+      # sudo -i
+    Update packages to latest versions
+      # apt update
+      # apt upgrade
+    Install nginx
+      # apt install nginx -y 
+    Create Nginx conf file
+      # vi /etc/nginx/sites-available/vproapp 
+    Update with below content
 
-    upstream vproapp {
-     server app01:8080;
-    }
-    server {
-     listen 80;
-    location / {
-      proxy_pass http://vproapp;
-    }
-    }
-  Remove default nginx conf
-    # rm -rf /etc/nginx/sites-enabled/default 
-  Create link to activate website
-    # ln -s /etc/nginx/sites-available/vproapp /etc/nginx/sites-enabled/vproapp
-  Restart Nginx
-    # systemctl restart nginx
+      upstream vproapp {
+       server app01:8080;
+      }
+      server {
+       listen 80;
+      location / {
+        proxy_pass http://vproapp;
+      }
+      }
+    Remove default nginx conf
+      # rm -rf /etc/nginx/sites-enabled/default 
+    Create link to activate website
+      # ln -s /etc/nginx/sites-available/vproapp /etc/nginx/sites-enabled/vproapp
+    Restart Nginx
+      # systemctl restart nginx
 
 
 ## Verification 
-  Go to browser and put in the IP address previosly assigned to the NGINX virtual machine
-  http://192.168.10.11/
-  Note: the webpage that shows proves that NGINX is working and it is connected to the APP (TOMCAT Apache), when signin is successfull this proves the database is connected to the App. This shows the project was successful 
+  Go to browser and put in the IP address previosly assigned to the NGINX virtual machine\
+  http://192.168.10.11/\
+  Note: The webpage that shows proves that NGINX is working and it is connected to the APP (TOMCAT Apache), when signin is successfull this proves the database is connected to the App. This shows the project was successful 
 
 ## Troubleshooting & Maintenance
-   Restarting Services: Provide commands for restarting individual services on their respective VMs (e.g., sudo systemctl restart tomcat).
+  Restarting Services: Provide commands for restarting individual services on their respective VMs (e.g., sudo systemctl restart tomcat).
 
-   Reloading VMs: "vagrant reload" command is used to restart and reload the VMs, this can also be done on the individual VMs for example, vabrant reload app01 
+  Reloading VMs: "vagrant reload" command is used to restart and reload the VMs, this can also be done on the individual VMs for example, vabrant reload app01 
 
-    Destroying the Environment: Command to completely remove all VMs and free up resources. "vagrant halt" to stop the VMs and "vagrant destroy" to delete the VMs
+  Destroying the Environment: Command to completely remove all VMs and free up resources. "vagrant halt" to stop the VMs and "vagrant destroy" to delete the VMs
