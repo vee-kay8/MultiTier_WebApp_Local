@@ -1,22 +1,52 @@
-# MultiTier_WebApp_Locally
-a multi tier web application setup locally for R and D
-1. Nginx=> Web Service
-2. Tomcat=> Application Server
-3. RabbitMQ=> Broker/Queuing Agent
-4. Memcache=> DB Caching
-5. MySQL         => SQL Database
+# Multi-Tier Web Application Hosted Locally
+
+## Project Overview
+A fully automated, local development environment simulating a real-world social media application architecture. This project demonstrates infrastructure-as-code principles using Vagrant to orchestrate multiple VMs hosting Nginx, Tomcat, MySQL, Memcached, and RabbitMQ.
+
+## Architecture
 
 
+## Project Goal:
+
+This repository provides a fully automated, local replication of a multi-tier web application infrastructure using Vagrant and VirtualBox. It serves as a Rapid Development and Research & Development (R&D) baseline for a Java-based social media application.
+
+## Key Technologies Demonstrated:
+
+Automation: Vagrant, Shell Scripting
+
+Virtualization: Oracle VirtualBox
+
+Web Server/Proxy: Nginx
+
+Application Server: Apache Tomcat
+
+Data/Caching: MySQL, Memcached
+
+Messaging (Future Expansion): RabbitMQ
+
+Application Language: Java
 
 
+## Application Execution Flow
+User Access: User's browser → Nginx (acting as a reverse proxy).
 
-# Project Workflow
+Request Routing: Nginx forwards the request → Apache Tomcat (hosting the Java application).
+
+Application Logic (Login): The Java application receives the request.
+
+Caching Check: It first queries Memcached for existing session/login details.
+
+Database Query: If not found in cache (first login or session expired), the application queries the MySQL database.
+
+Messaging Layer: RabbitMQ is installed and running to demonstrate a production-ready setup but is not actively used in the current login flow.
+
+## Project Workflow
 1) Install the following in the local system
-
       -Oracle VM Virtualbox
       -Vagrant
       -Git
       -sublime text or VS-code 
+
 2) Clone the source code from the Repository
     $ git clone https://github.com/vee-kay8/MultiTier_WebApp_Locally.git
 
@@ -26,35 +56,34 @@ a multi tier web application setup locally for R and D
 4) CD into repository and bring up VMs
     $ cd MultiTier_WebApp_Locally
     $ vagrant up
-NOTE: Bringing up all the vm’s may take a long time based on various factors. If vm setup stops in the middle run “vagrant up” command again.
-INFO: All the vm’s hostname and /etc/hosts file entries will be automatically updated.
+   NOTE: Bringing up all the vm’s may take a long time based on various factors. If vm setup stops in the middle run “vagrant up” command again.
+   INFO: All the vm’s hostname and /etc/hosts file entries will be automatically updated.
 
 5) Setup Services
- Setup should be done in below mentioned order:
+  Setup should be done in below mentioned order:
     -MySQL (Database Service)
     -Memcache (DB Caching Service)
     -RabbitMQ (Broker/Queue Service)
     -Tomcat (Application Service)
     -Nginx (Web (Load balancing) Service)
 
-  (A) MYSQL Setup 
-     Login to the db vm
+  ### MYSQL Setup 
+    Login to the db vm
       $ vagrant ssh db01
     Switch to root user
-      # sudo -i
+      $ sudo -i
     Update packages to latest versions
-      # dnf update -y 
+      $ dnf update -y 
     Set Repository
-      # dnf install epel-release -y 
+      $ dnf install epel-release -y 
     Install Maria DB Package
-      # dnf install git mariadb-server -y 
+      $ dnf install git mariadb-server -y 
     Starting & enabling mariadb-server
-      # systemctl start mariadb
-      # systemctl enable mariadb
-
-    RUN mysql secure installation script.
+      $ systemctl start mariadb
+      $ systemctl enable mariadb
+      RUN mysql secure installation script.
     this command asks a series of question to secure the database
-      # mysql_secure_installation
+      $ mysql_secure_installation
     NOTE: Set db root password, I will be using admin123 as password just because this is a home labproject, in real world, you should use a more complicaed password
 
     Set root password? [Y/n] Y New password:
@@ -77,7 +106,7 @@ INFO: All the vm’s hostname and /etc/hosts file entries will be automatically 
 
 
     Log in with root user
-      # mysql -u root -p
+      $ mysql -u root -p
         Enter password:
     Create database
       MariaDB> create database accounts;
@@ -91,30 +120,45 @@ INFO: All the vm’s hostname and /etc/hosts file entries will be automatically 
 
 
     Download Source code & Initialize Database.
-     # cd /tmp/
-     # git clone https://github.com/vee-kay8/MultiTier_WebApp_Local.git
-     # cd MultiTier_WebApp_Local
+     $ cd /tmp/
+     $ git clone https://github.com/vee-kay8/MultiTier_WebApp_Local.git
+     $ cd MultiTier_WebApp_Local
     Restore the contents of the db_backup.sql file into the accounts database.
-     # mysql -u root -padmin123 accounts < src/main/resources/db_backup.sql
+     $ mysql -u root -padmin123 accounts < src/main/resources/db_backup.sql
     log in to the "account" database
-     # mysql -u root -padmin123 accounts
+     $ mysql -u root -padmin123 accounts
        MariaDB> show tables;
        MariaDB> show databases;
        MariaDB> exit;
     Restart mariadb-server
-     # systemctl restart mariadb
+       $ systemctl restart mariadb
+      
+    
+
+     
 
 
 
-(B) MEMCACHE SETUP 
-  Login to the Memcache VM
-    $ vagrant ssh db01
-  Switch to root user
-    # sudo -i
-  Update packages to latest versions
-    # dnf update -y
-  Install, start & enable memcache on port 11211
-    # sudo dnf install epel-release -y
+
+     
+      
+    
+      
+    
+
+    
+
+
+
+  ### MEMCACHE SETUP 
+    Login to the Memcache VM
+      $ vagrant ssh db01
+    Switch to root user
+      # sudo -i
+    Update packages to latest versions
+      # dnf update -y
+    Install, start & enable memcache on port 11211
+      # sudo dnf install epel-release -y
     # sudo dnf install memcached -y
     # sudo systemctl start memcached
     # sudo systemctl enable memcached
@@ -127,7 +171,7 @@ INFO: All the vm’s hostname and /etc/hosts file entries will be automatically 
     # sudo memcached -p 11211 -U 11111 -u memcached -d
 
  
-(C).RABBITMQ SETUP
+  ### RABBITMQ SETUP
   Login to the RabbitMQ vm
     $ vagrant ssh rmq01
   Switch to root user
@@ -148,7 +192,7 @@ INFO: All the vm’s hostname and /etc/hosts file entries will be automatically 
     # sudo systemctl restart rabbitmq-server
     # systemctl enable --now rabbitmq-server
 
-(D) TOMCAT SETUP
+  ### TOMCAT SETUP
   Login to the tomcat vm
     $ vagrant ssh app01
   Switch to root user
@@ -221,7 +265,7 @@ INFO: All the vm’s hostname and /etc/hosts file entries will be automatically 
     # systemctl restart tomcat
 
 
-(E) NGINX SETUP
+  ### NGINX SETUP
   Login to the Nginx vm
     $ vagrant ssh web01
   Switch to root user
@@ -251,3 +295,15 @@ INFO: All the vm’s hostname and /etc/hosts file entries will be automatically 
   Restart Nginx
     # systemctl restart nginx
 
+
+## Verification 
+  Go to browser and put in the IP address previosly assigned to the NGINX virtual machine
+  http://192.168.10.11/
+  Note: the webpage that shows proves that NGINX is working and it is connected to the APP (TOMCAT Apache), when signin is successfull this proves the database is connected to the App. This shows the project was successful 
+
+## Troubleshooting & Maintenance
+   Restarting Services: Provide commands for restarting individual services on their respective VMs (e.g., sudo systemctl restart tomcat).
+
+   Reloading VMs: "vagrant reload" command is used to restart and reload the VMs, this can also be done on the individual VMs for example, vabrant reload app01 
+
+    Destroying the Environment: Command to completely remove all VMs and free up resources. "vagrant halt" to stop the VMs and "vagrant destroy" to delete the VMs
