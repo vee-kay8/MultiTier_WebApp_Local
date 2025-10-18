@@ -6,7 +6,7 @@ A fully automated, local development environment simulating a real-world social 
 ## Architecture
 
 
-## Project Goal:
+## Project Goal: 
 
 This repository provides a fully automated, local replication of a multi-tier web application infrastructure using Vagrant and VirtualBox. It serves as a Rapid Development and Research & Development (R&D) baseline for a Java-based social media application.
 
