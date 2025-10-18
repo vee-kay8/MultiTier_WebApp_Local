@@ -1,4 +1,4 @@
-# Multi-Tier Web Application Hosted Locally
+# Multi-Tier Web Application Hosted Locally 
 
 ## Project Overview
 A fully automated, local development environment simulating a real-world social media application architecture. This project demonstrates infrastructure-as-code principles using Vagrant to orchestrate multiple VMs hosting Nginx, Tomcat, MySQL, Memcached, and RabbitMQ.
