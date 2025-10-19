@@ -83,4 +83,14 @@ Before deploying, ensure you have:
 * Source code or build artifact (WAR file for Tomcat app)
 ## 🔧 Step-by-Step Setup Instructions
 ### Phase 1: Preparation and Base Infrastructure
+#### Step 1: Create Security Groups and Key Pair
+Create a Key Pair: Generate a secure key pair for SSH access to EC2 instances.
+
+Create and Define 3 security groups:
+* The first Securtiy Group is for the Load Balancer and it listens to the users for HTTP and HTTPS. (Inbound rule: allow HTTP and HTTPS from anywhere )
+
+* The second Security Group is for the Tomcat Apache App instance and it listens to the Load Balancer Security Group. (Inbound rule: allow port 8080 connection from the Load balancer Security group, also allow ssh connection to Tomcat instance)
+
+* The Third Security Group  is for the Backend services and it listens to the App security group (Inbound rule: allow Mysql service port 3306, Memcached port 11211, Rabbitmq port 5672 from the App SG. also allow ssh connections to the backend instances and allow connections between backend services)
+
 
