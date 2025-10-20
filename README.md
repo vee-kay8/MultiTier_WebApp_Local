@@ -114,8 +114,38 @@ In this next we are going to use route 53 to create a Private DNS service to map
 
 * Repeat creating records for all the backend services. the tomcat service is optional because i am going to use a load balancer that is connected to it
 
-### Phase 2 Application Deployment and Load Balancing
- 
+### Phase 2: Application Deployment and Load Balancing
+#### Step 4: Build and Deploy Artifact
+Build the artifact on a computer using MAVEN, then push the artifact to S3 bucket using AWS CLI. Finally, the artifact is pulled from the s3 bucket using IAM roles and deployed in the Tomcat Server.
+* Create S3 bucket.
+
+* In IAM, create user, attach S3 full access policy, download and save the access keys and password.
+
+* Create IAM roles: In IAM roles click create roles, under AWS service select EC2, for the permission select Amazon S3 full acess.
+
+* Apply the role to the Tomcat instance.
+
+* Using VS code/ go to src > main > resource > application.properties files, replace db01, mc01 and rmq01 with the mapnames from step 3 for in this projject I replaced db01 to db01.multitier.in
+
+* check version of maven using mvn -version then build the artifact using mvn install, a new folder called target will be made.
+
+* configure the AWS CLI using the saved Accesskeys and password
+
+* Copy the artifact from the target folder to S3 bucket using aws s3 cp target/vprofile-v2.war s3://bucketname/
+
+* Deploy the artifact to the Tomcat server, by connecting  the server through ssh, install aws cli using snap install aws-cli -- classic thencopy articat from s3 bucket to a temp folder using aws   s3 cp s3://bucketname /vprofile-v2 war /tmp/
+ stop the tomcat service using systemctl stop tomcat10 . Remove and replace the ROOT with the artifact. rm -r /var/lib/tomcat10/webapps/ROOT
+ cp /tmp/vprofile-v2.war /var/lib/tomcat/webapps/ROOT.war
+  restart tomcat using systemctl start tomcat10.
+
+#### Step 5 Load Balancer and DNS 
+  * Create a target group - use 8080 for HTTP because tomcat uses port 8080 rather than 80, in the advanced health check overide the port 80 to 8080 as well. add the tomcat instance to the target group and create it.
+
+  * Create the Load Balancer: select the application load balancer, select all availability zones, Use the Load Balancer security group initially created, add the target group just created, add https listener for secured connection and select the certificate created .
+
+  * Copy the DNS name of the load balancer, go to route 53, create a CNAME record in the domain hosted zone and map the load balancer DNS name to the domain name.
+
+  ### Phase 3: Automation and Verification
 
 
 
