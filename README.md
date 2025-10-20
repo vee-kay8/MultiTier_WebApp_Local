@@ -93,4 +93,29 @@ Create and Define 3 security groups:
 
 * The Third Security Group  is for the Backend services and it listens to the App security group (Inbound rule: allow Mysql service port 3306, Memcached port 11211, Rabbitmq port 5672 from the App SG. also allow ssh connections to the backend instances and allow connections between backend services)
 
+#### Step 2: Launch Instances
+Create 4 Instances, one for the Tomcat Apaches service and the other three for the backend services. The bash scripts used to  launch the instances are in the userdata folder in the Repo
+
+* Create the first backend Instance for the mysql service, use Amazon Linux as the OS image, use the Backend Security group that was created and the mysql.sh script.
+
+*  Create the second backend Instance for the memcached service, use Amazon Linux as the OS image, use the Backend Security group that was created and the memcache.sh script.
+
+*  Create the third backend Instance for the rabbitmq service, use Amazon Linux as the OS image, use the Backend Security group that was created and the rabbitmq.sh script.
+
+* Create the fourth Instance, this is for the Tomcat Apache Application, use the ubuntu 24 OS image, the Application security group and the tomcat_ubuntu.sh script.
+
+* ssh into the various instances and check the system status of all the service  installed through the scripts. ensure they are all running.
+
+#### Step 3: Update IP to name mapping in route 53
+In this next we are going to use route 53 to create a Private DNS service to map the usernames ogf the services to the private address of their instances.
+* Go to create hosted zones in route 53, name it whatever you want ( in this project i used multitier.in), select private hosted zone and click create hosted zone.
+
+* Click create records, use A records, get the private address from the instances and map them to the name you give(For example, db01.multitier.in to 172.31.28.5,) 
+
+* Repeat creating records for all the backend services. the tomcat service is optional because i am going to use a load balancer that is connected to it
+
+### Phase 2 Application Deployment and Load Balancing
+ 
+
+
 
