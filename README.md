@@ -53,20 +53,6 @@ __Components:__
 
 * Auto Scaling: Scale Tomcat EC2 instances dynamically
 
-__Architecture Diagram:__
-
-   Users
-     │
-     ▼
-  Route 53  ──►  AWS ELB (HTTPS)
-                     │
-         ┌───────────┴───────────┐
-         │                       │
-     Tomcat EC2 (App)       Tomcat EC2 (App)
-         │                       │
-      RabbitMQ EC2        Memcached EC2
-             │
-         MySQL EC2 (DB)
 
 ## ⚙️ Prerequisites
 
@@ -127,25 +113,115 @@ Build the artifact on a computer using MAVEN, then push the artifact to S3 bucke
 
 * Using VS code/ go to src > main > resource > application.properties files, replace db01, mc01 and rmq01 with the mapnames from step 3 for in this projject I replaced db01 to db01.multitier.in
 
-* check version of maven using mvn -version then build the artifact using mvn install, a new folder called target will be made.
+* check version of maven using `mvn -version` then build the artifact using `mvn install`, a new folder called target will be made.
 
 * configure the AWS CLI using the saved Accesskeys and password
 
-* Copy the artifact from the target folder to S3 bucket using aws s3 cp target/vprofile-v2.war s3://bucketname/
+* Copy the artifact from the target folder to S3 bucket using aws `s3 cp target/vprofile-v2.war s3://bucketname/`
 
-* Deploy the artifact to the Tomcat server, by connecting  the server through ssh, install aws cli using snap install aws-cli -- classic thencopy articat from s3 bucket to a temp folder using aws   s3 cp s3://bucketname /vprofile-v2 war /tmp/
- stop the tomcat service using systemctl stop tomcat10 . Remove and replace the ROOT with the artifact. rm -r /var/lib/tomcat10/webapps/ROOT
- cp /tmp/vprofile-v2.war /var/lib/tomcat/webapps/ROOT.war
-  restart tomcat using systemctl start tomcat10.
+* Deploy the artifact to the Tomcat server, by connecting  the server through ssh, install aws cli using snap install aws-cli -- classic then copy articat from s3 bucket to a temp folder using aws   `s3 cp s3://bucketname /vprofile-v2 war /tmp/`
+stop the tomcat service using systemctl stop tomcat10 . Remove and replace the ROOT with the artifact. `rm -r /var/lib/tomcat10/webapps/ROOT`
+`cp /tmp/vprofile-v2.war /var/lib/tomcat/webapps/ROOT.war`
+restart tomcat using `systemctl start tomcat10`.
 
 #### Step 5 Load Balancer and DNS 
-  * Create a target group - use 8080 for HTTP because tomcat uses port 8080 rather than 80, in the advanced health check overide the port 80 to 8080 as well. add the tomcat instance to the target group and create it.
+* Create a target group - use 8080 for HTTP because tomcat uses port 8080 rather than 80, in the advanced health check overide the port 80 to 8080 as well. add the tomcat instance to the target group and create it.
 
-  * Create the Load Balancer: select the application load balancer, select all availability zones, Use the Load Balancer security group initially created, add the target group just created, add https listener for secured connection and select the certificate created .
+* Create the Load Balancer: select the application load balancer, select all availability zones, Use the Load Balancer security group initially created, add the target group just created, add https listener for secured connection and select the certificate created .
 
-  * Copy the DNS name of the load balancer, go to route 53, create a CNAME record in the domain hosted zone and map the load balancer DNS name to the domain name.
+* Copy the DNS name of the load balancer, go to route 53, create a CNAME record in the domain hosted zone and map the load balancer DNS name to the domain name.
 
-  ### Phase 3: Automation and Verification
+### Phase 3: Automation and Verification
+
+#### Step 6: Autoscaling Group
+* The first step of creating an Autoscaling group is to create an AMI from the instance you want to auto scale and in this project it is the tomcat instance. Select the instance, click create AMI, name it and click create.
+
+* The next step is to create a Launch Template. Navigate to the Template section and click on create template, select the AMI just created, then choose the instance type, the key pair and the application security group created in step 1. Add the IAM role to the launch template.
+
+* The final step Autoscaling is creating the Autoscaling group: click on create autoscale group, select the launch template just created, pick the availability zones. Attach it to the load balancer created in step 5 and the target group created as well. Turn on ELB healthcheck, select the desired amount of instance, the minimum and maximum instance as well. Select the metric used to scale out or in, In this project I used average CPU utilization. Add notification -SNS Topic, to get notification on the scaling.
+
+#### Step 7: Validate
+
+* Verify Auto Scaling Group
+Confirm that the **Auto Scaling Group (ASG)** is actively managing and maintaining the desired number of application instances.
+
+* Test Auto Scaling by stressing CPU
+
+* Confirm load balancing across Tomcat nodes
+
+* Access the Application
+Use the assigned **domain name** to access the deployed application.
+
+* Authenticate
+Log in with the following credentials:
+  - **Username:** `admin_vp`
+  - **Password:** `admin_vp`
+
+* Functional Validation
+Navigate through the application and confirm that all features and services are functioning as expected.  
+Ensure page responses, database connectivity, and load balancing are working properly.
 
 
 
+### Cleanup Procedure
+
+* Delete Auto Scaling Group
+Remove the **Auto Scaling Group** to stop automatic management of instances.
+
+* Terminate Backend Instances
+Delete all **backend EC2 instances** created during deployment.
+
+* Remove Load Balancer
+Delete the **Load Balancer** associated with the application to release allocated resources.
+
+* Clean Up DNS and Hosted Zones
+  - Delete the **DNS records** associated with the domain.  
+  - Remove the **Hosted Zones** from Route 53.
+
+* Deregister AMI: 
+Deregister the **Amazon Machine Image (AMI)** created for the deployment.
+
+* Delete Snapshots
+Permanently delete any **snapshots** associated with the AMI or instances to free up storage.
+
+
+## 🧠 Lessons Learned
+
+* Automation matters — EC2 User Data simplifies instance setup
+
+* Scaling becomes effortless — AWS ASG removes manual VM management
+
+* Security is layered — SGs, IAM, and SSL certificates protect every tier
+
+* DNS management — Route 53 provides simple yet powerful control
+
+## 🔮 Future Improvements
+
+* Re-Architecting Web App on AWS Cloud [PAAS & SAAS]
+
+* Implement CI/CD with AWS CodePipeline & CodeDeploy
+
+* Containerize the architecture using ECS or EKS
+
+* Add centralized monitoring via CloudWatch Dashboards
+
+## 📚 References
+
+* [AWS EC2 Documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html)
+
+* [AWS S3 Documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html)
+
+* [AWS Load Balancer Docs](https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html)
+
+* [Route 53 Docs](https://docs.aws.amazon.com/route53/)
+
+## 🧑🏽‍💻 Author
+
+### Voke Ogigbah
+Cloud Engineer | Systems & Security | AWS | Automation
+
+[💼 LinkedIn](https://www.linkedin.com/in/voke-ogigbah-015b5871/)
+
+[📝 Medium](https://medium.com/@vokeogigbah)
+
+[💻 Portfolio](vokeogigbah.com)
