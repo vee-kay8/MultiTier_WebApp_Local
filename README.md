@@ -195,7 +195,7 @@ Permanently delete any **snapshots** associated with the AMI or instances to fre
 
 * DNS management — Route 53 provides simple yet powerful control
 
-## 🔮 Future Improvements
+## 🔮 Future Improvements 
 
 * Re-Architecting Web App on AWS Cloud [PAAS & SAAS]
 
