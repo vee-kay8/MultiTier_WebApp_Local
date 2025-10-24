@@ -2,6 +2,7 @@
 
 ## Project Overview
 
+
 This project demonstrates the re-architecting of a legacy "lift-and-shifted" web application into a fully cloud-native, scalable, and highly available system on AWS. We migrated from a manually managed infrastructure on EC2 instances to a PaaS/SaaS model using managed services to reduce operational overhead and improve agility.
 
 ## Architecture & Rationale
