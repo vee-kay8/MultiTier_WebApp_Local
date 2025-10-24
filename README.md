@@ -85,6 +85,17 @@ Layers and Services:
     *   Assign the `SG-Backend` security group.
     *   Ensure Private access
     *   Give Username & Password and take note of it.
+4.  **DB Initialization:**
+    *  Launch an instance, in the same VPC with the RDS.
+    *  Connect to the instance through ssh
+    *  Install git and mysql client `apt update && apt install mysql-client git -y`
+    *  Allow the security group of this instance to be connected to the backend security group using mysql.
+    *  Clone the source code `git clone https://github.com/vee-kay8/MultiTier_WebApp.git` 
+    *  Get the endpoint of the RDS, the username and the password and login
+    *  Deploy the schema: `mysql -h "endpoint" -u "username" -p "password" accounts < src/main/resources/db_backup.sql`
+    *  log in to confirm: `mysql -h "endpoint" -u "username" -p "password" accounts`
+    *  `show tables;` `exit`
+    *  Delete Instance
 
 ### Step 3: Configure & Deploy the Application Tier
 1.  **Create Elastic Beanstalk Environment:**
