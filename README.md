@@ -98,34 +98,82 @@ Layers and Services:
     *  Delete Instance
 
 ### Step 3: Configure & Deploy the Application Tier
-1.  **Create Elastic Beanstalk Environment:**
-    *   Platform: Tomcat.
-    *   Upload your initial application version (can be a placeholder).
-    *   Beanstalk will automatically create an ELB and Auto-Scaling Group.
-2.  **Update Security Groups:**
-    *   Edit `SG-Backend` to allow inbound traffic from `SG-ElasticBeanstalk` on the necessary ports. This locks down the backend to only the app tier.
-3.  **Initialize the Database:**
-    *   Launch a temporary EC2 instance (a "jump box") in a public subnet with the `SG-Backend` SG.
-    *   SSH into it and connect to the RDS endpoint using a MySQL client.
-    *   Run your database schema creation scripts.
-    *   **Terminate the instance after this step.**
+1.  **Create IAM Roles for the Beanstalk:**
+    *   Select AWS service and for service select EC2 Instances
+    *   Attach the following Policies
+        *   AdminstratorAccess-AWSElasticBeanstalk
+        *   AWSElasticBeanstalkCustomPlatformforEC2Role
+        *   AWSElasticBeanstalkRoleSNS
+        *   AWSElasticBeanstalkWebTier
+    *   Give it a name "`multitier-beanrole`" and save.
+2.  **Create Amazon Elastic Beaqnstalk Application**<br>
+    Click on create Application
+    *   Configure Environment
+        *   select Web server environment
+        *   give application a name "`multitier-beanapp`"
+        *   give Environment name "`multitier-beanapp-prod`"
+        *   add a unique domain name "`multitier.us-east-1.elasticbeanstalk.com`"
+        *   Select `Tomcat` as platform and `Tomcat 10 with Correto 21 running on 64bit Amazon Linux 2023` as platform branch
+        *   select `Sample application` for now and for Presets select `Custom configuration`
+    *   Configure Service access
+        *   select `aws-elasticbeanstalk-service-role` as the service role.
+        *   select the IAM role created "`multitier-beanrole`" as the EC2 instance profile
+        *    select existing keypair
+    *   Set up networking, database, and tags.
+        *   select the default vpc
+        *   tick the Public IP address Activated box
+        *   select all the Availabiliy zones in the instance subnets
+        *   don't select anything in the database part because we already created a databse.
+        *   create the appropraiate tags
+    *   Configure instance traffic and scaling
+        *   change Root volume type to `General purpose3(SSD)`
+        *   dont select anything in security group so the app creates it's own security group and we can edit it.
+        *   select `Load balanced` in the auto scaling section
+        *   select min and max instances based on your projec. In this project I selected min 2, and max 4 instances.
+        *   instance type, I selected T2 micro
+        *   for scaling trigger, I selected `NetworkOut`
+        *   for process, edit and add stickiness
+    *   Configure updates, monitoring and logging
+        *   Select `Rolling` as the Deployment policy and `50%` Deployment batch size
+    *   Review
+        * Submit
+3.  **Build & Deploy Artifact**
+    *  In VS-code, navigate the project folder, src>main>application.properties and update the backend information
+        *    replace db01 with the RDS end point that was noted previously also replace the username and password as well.
+        *   replace mc01 with the Elasticache endpoint, the portnumber repains the same
+        *   replace the rabbitmq address from rmq01 to the endpoint end point of the amazonMQ and change the port number to 5671, update the username and password too.
+        *   crosscheck and make sure every detail is accurate, else the application wont work.
+    *   Go to default terminal and run the following commands to build
+        *   `mvn -version` to see the version of maven installed and java installed as well, it should be maven 3.9.9 and java 17.0.12
+        *   `mvn install` to build the artifact in the local machine.
+    *   Go to Beanstalk environment and click upoload, navigate to the .war file (artifact), select it, give it a version  and click upload. 
+    *   After it is successful, click on the domain and it will take you to the login page but this page is not secure. to secure it we will need to:
+        *   navigate to configuration then click on edit on "Instance traffic and scaling"
+        *   go to listeners under load balancer and add listener
+        *   select HTTPs protocol and port 443, and select the registered SSL certificate and save it
+        *   Apply the changes.
+    *   Copy the URL and go to Route53, add a new CNAME record and map it to the registered domain.
+    *   Go to web browser and put in the mapped domain, observe that the connection is now secured
+    *   log in and verify everything is working.
 
-### Step 4: Application Configuration & Deployment
-1.  **Update Beanstalk Load Balancer:**
-    *   In the Beanstalk console, add a listener to the ELB for port 443 (HTTPS) and attach your ACM certificate.
-2.  **Update Application Health Check:**
-    *   Change the health check path from `/` to a meaningful endpoint like `/login`.
-3.  **Build and Deploy Final Artifact:**
-    *   Rebuild your application WAR/JAR file, configuring it with the endpoints and credentials for RDS, ElastiCache, and Amazon MQ (use environment properties in Beanstalk for credentials!).
-    *   Deploy this final artifact to your Beanstalk environment.
-
-### Step 5: Global Delivery & DNS
+### Step 4: Global Delivery
 1.  **Create a CloudFront Distribution:**
-    *   Set the Beanstalk environment's URL as the origin.
-    *   Use the same ACM certificate for custom SSL.
-2.  **Configure Route 53:**
-    *   Create a public hosted zone for your domain (e.g., `myapp.com`).
-    *   Create an **A record** that aliases your domain (e.g., `www.myapp.com`) to the CloudFront distribution.
+    <br> Navigate to cloudfront and click on create distribution
+    *   Give the Disribution a name, select single website or app as Distribution type
+    *   Specify Origin
+        *   select Elastic Load balancer
+        *   browse and select the loadbalancer Beanstalk created.
+        *   Customise Origin setting
+            *   Protocol = match viewer
+    *   In this project i didnt enable the WAF but in production WAF shouuld be enabled
+    *   deploy
+    *   Add domain
+        *   Give Domain name we are going to use to acccess the website.
+        *   select the certificate
+        *   add domain
+    *   Select Distribution domain name, go to route 53, create a CNAME record and map the distribution domain name to the website domain name.
+    *   Verify by going to the website and inspect the page 
+
 
 ## Verification & Testing
 
@@ -144,44 +192,7 @@ To avoid incurring charges, remember to delete all created resources:
 *   CloudFront Distribution
 *   Route 53 Hosted Zone
 
-
-🧪 Testing & Validation
-
-Verify health status in Elastic Beanstalk dashboard
-
-Check DB connection logs
-
-Confirm cache hits via ElastiCache metrics
-
-Validate message flow in ActiveMQ console
-
-Perform end-to-end functional testing through the app UI
-
-🧹 Cleanup
-
-To avoid incurring unnecessary charges:
-
-Terminate the Elastic Beanstalk environment
-
-Delete RDS, ElastiCache, and Amazon MQ instances
-
-Delete CloudFront distribution
-
-Remove Route 53 records
-
-Remove unused key pairs and security groups
-
-📸 Screenshots
-
-Elastic Beanstalk environment dashboard
-
-RDS instance configuration
-
-Route 53 DNS setup
-
-CloudFront distribution settings
-
-🧠 Key Learnings
+## 🧠 Key Learnings
 
 Migrating to AWS PaaS drastically reduces maintenance overhead.
 
@@ -189,30 +200,24 @@ Managed services improve uptime and scalability with minimal ops effort.
 
 Infrastructure automation accelerates deployment and disaster recovery.
 
-🔗 References
+## 🔗 References
 
-AWS Elastic Beanstalk Documentation
+[AWS Elastic Beanstalk Documentation](https://docs.aws.amazon.com/elastic-beanstalk/)
 
-Amazon RDS Documentation
+[Amazon RDS Documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html)
 
-Amazon ElastiCache Documentation
+[Amazon ElastiCache Documentation](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html)
 
-Amazon MQ Documentation
 
-AWS CloudFront Documentation
+[AWS CloudFront Documentation](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html)
 
-👨‍💻 Author
+## 👨‍💻 Author
 
 Voke Ogigbah
 Cloud Engineer | DevOps Enthusiast | AWS Practitioner
-🔗 LinkedIn
- | Medium
- | GitHub
 
-database
-CPua1QZ8Gh9pU9BV6Ynp
-admin
+[💼 LinkedIn](https://www.linkedin.com/in/voke-ogigbah-015b5871/)
 
-amazonmq
-voke
-Favour888888
+[📝 Medium](https://medium.com/@vokeogigbah)
+
+[💻 Portfolio](vokeogigbah.com)
